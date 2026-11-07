@@ -458,6 +458,50 @@
     border: 2px solid var(--or); box-shadow: 0 0 0 3px #2a190c, 0 4px 10px rgba(0,0,0,.35);
   }
 
+  /* ---------- Curseur nombre de joueurs ---------- */
+  .curseur { margin: 0 0 22px; }
+  .curseur .nb { margin: 0 auto 14px; }
+  #curseur {
+    -webkit-appearance: none; appearance: none; display: block;
+    width: 100%; height: 34px; background: transparent; margin: 0;
+    touch-action: none; cursor: pointer;
+  }
+  #curseur:focus { outline: none; }
+  #curseur::-webkit-slider-runnable-track {
+    height: 10px; border-radius: 5px;
+    background:
+      linear-gradient(90deg, var(--or-sombre), var(--or) ) 0 0 / var(--pct, 0%) 100% no-repeat,
+      #3a2512;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.6), 0 0 0 1px var(--or-sombre);
+  }
+  #curseur::-moz-range-track {
+    height: 10px; border-radius: 5px; background: #3a2512;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.6), 0 0 0 1px var(--or-sombre);
+  }
+  #curseur::-moz-range-progress { height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--or-sombre), var(--or)); }
+  #curseur::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 32px; height: 32px; margin-top: -11px; border-radius: 50%;
+    background: radial-gradient(circle at 42% 38%, #e6f5ff 0, #6fb8ff 25%, #1f66d1 55%, #0a2a6b 80%);
+    border: 3px solid var(--or);
+    box-shadow: 0 0 0 2px #2a190c, 0 0 14px 3px rgba(79,163,255,.6), 0 3px 6px rgba(0,0,0,.5);
+  }
+  #curseur::-moz-range-thumb {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: radial-gradient(circle at 42% 38%, #e6f5ff 0, #6fb8ff 25%, #1f66d1 55%, #0a2a6b 80%);
+    border: 3px solid var(--or);
+    box-shadow: 0 0 0 2px #2a190c, 0 0 14px 3px rgba(79,163,255,.6);
+  }
+  .graduations {
+    display: flex; justify-content: space-between; padding: 4px 16px 0;
+  }
+  .graduations span {
+    width: 0; display: flex; justify-content: center; white-space: nowrap; cursor: pointer;
+    font-family: "Cinzel", serif; font-weight: 600; font-size: 13px; color: rgba(122,83,32,.6);
+    transition: color .2s, transform .2s;
+  }
+  .graduations span.actif { color: var(--sang); transform: scale(1.3); }
+
   /* ---------- Navigation ---------- */
   nav {
     position: fixed; left: 0; right: 0; bottom: 0;
@@ -662,10 +706,10 @@
       <div class="chapitre">Avant de jouer</div>
       <h2>Combien<br><span style="white-space:nowrap">êtes-vous&nbsp;?</span></h2>
       <div class="filet"><span class="gemme"></span></div>
-      <div class="compteur">
-        <button class="medaillon" id="moins" aria-label="Un joueur de moins">−</button>
+      <div class="curseur">
         <div class="nb"><b id="nbJoueurs">4</b><span>joueurs</span></div>
-        <button class="medaillon" id="plus" aria-label="Un joueur de plus">+</button>
+        <input type="range" id="curseur" step="1" aria-label="Nombre de joueurs">
+        <div class="graduations" id="graduations"></div>
       </div>
       <p class="verdict">Paquet de <b id="nbCartes">–</b> cartes</p>
       <div class="grille" id="grille"></div>
@@ -796,6 +840,15 @@
     grille.appendChild(d);
     tuiles.push(d);
   }
+  const curseur = document.getElementById('curseur');
+  const graduations = document.getElementById('graduations');
+  curseur.min = JOUEURS_MIN; curseur.max = JOUEURS_MAX;
+  for (let n = JOUEURS_MIN; n <= JOUEURS_MAX; n++) {
+    const g = document.createElement('span');
+    g.textContent = n;
+    g.onclick = () => { joueurs = n; majCalcul(); };
+    graduations.appendChild(g);
+  }
   let joueurs = JOUEURS_DEFAUT;
   function majCalcul() {
     const groupe = REPARTITION.find(g => joueurs >= g.de && joueurs <= g.a);
@@ -811,11 +864,14 @@
     document.getElementById('legende').textContent =
       'Préparez le paquet avec le nombre d\'exemplaires indiqué sous chaque carte.' +
       (groupe.n.includes(0) ? ' Les cartes grisées restent dans la boîte.' : '');
-    document.getElementById('moins').disabled = joueurs <= JOUEURS_MIN;
-    document.getElementById('plus').disabled = joueurs >= JOUEURS_MAX;
+    curseur.value = joueurs;
+    curseur.style.setProperty('--pct', ((joueurs - JOUEURS_MIN) / (JOUEURS_MAX - JOUEURS_MIN) * 100) + '%');
+    [...graduations.children].forEach(g => g.classList.toggle('actif', +g.textContent === joueurs));
   }
-  document.getElementById('moins').onclick = () => { joueurs--; majCalcul(); };
-  document.getElementById('plus').onclick = () => { joueurs++; majCalcul(); };
+  curseur.addEventListener('input', () => {
+    const v = +curseur.value;
+    if (v !== joueurs) { joueurs = v; majCalcul(); }
+  });
   majCalcul();
 </script>
 
